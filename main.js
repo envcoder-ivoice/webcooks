@@ -1313,6 +1313,152 @@ app.post('/account', (req, res) => {
     });
 
 
+      
+      
+
+  }
+
+    
+    
+    if (req.body.result.action === 'fundtransfer') {
+
+    var accesscode;
+    var lati;
+    var logi;
+    var msg;
+    var destpayeename;
+    var destamount;
+    var transremark = 'Groceries';
+
+    getaccesscode();
+
+    function getaccesscode() {
+      "use strict";
+      let restUrl1 = 'https://corporateapiprojectwar.mybluemix.net/corporate_banking/mybank/authenticate_client?client_id=kumarmca1@gmail.com&password=72S2V55I'
+      request.get(restUrl1, (err, response1, body) => {
+        if (!err && response1.statusCode == 200) {
+          let json1 = JSON.parse(response1.body);
+          console.log(json1);
+          console.log(json1.length);
+          accesscode = json1[0].token;
+          console.log(accesscode);
+          getaccountcustno();
+        } else {
+          let errorMessage = 'I failed to get Access Code';
+          return res.json({
+            speech: errorMessage,
+            displayText: errorMessage,
+            source: 'fundtransfer'
+          });
+        }
+      })
+    }
+
+    function getaccountcustno() {
+
+      let restUrl = 'https://retailbanking.mybluemix.net/banking/icicibank/participantmapping?client_id=kumarmca1@gmail.com';
+      request.get(restUrl, (err, response, body) => {
+        if (!err && response.statusCode == 200) {
+
+          let json = JSON.parse(response.body);
+          console.log(json.length);
+          var accounts = [];
+          if (json[0].account_no !== undefined && json[0].account_no !== '') {
+            accounts.push(json[0]);
+          }
+          accountno = accounts[0].account_no;
+          custno = accounts[0].cust_id;
+          getregpayee();
+
+        }
+      });
+    }
+
+    function getregpayee() {
+      "use strict";
+      console.log(accesscode, 'final');
+      console.log('access code entry');
+      console.log(accesscode, 'enter');
+      let resturl2 = 'https://retailbanking.mybluemix.net/banking/icicibank/listpayee?client_id=kumarmca1@gmail.com&token=' + accesscode + '&custid=' + custno + '';
+      console.log(resturl2);
+      request.get(resturl2, (err, response3, body) => {
+        if (!err && response3.statusCode == 200) {
+          let json2 = JSON.parse(response3.body);
+          console.log(json2.length);
+          console.log('Reached1');
+          console.log(json2);
+          var payees = [];
+          var payeesno = (json2.length - 1);
+          console.log(payeesno);
+          console.log('I have ' + payeesno + ' payees mapped to your id ');
+          for (let i = 1; i < json2.length; i++) {
+            if (json2[i].payeename !== undefined && json2[i].payeename !== '') {
+              payees.push(json2[i]);
+              console.log('Reached2');
+              console.log(payees[i - 1]);
+
+              if (json2[i].payeename == destpayeename) {
+
+                let resturl3 = 'https://retailbanking.mybluemix.net/banking/icicibank/fundTransfer?client_id=kumarmca1@gmail.com&token=' + accesscode + '&srcAccount=' + accountno + '&dest Account=' + json2[i].payeeaccountno + '&amt=' + destamount + '&payeeDesc=NA&payeeId=' + json2[i].payeeid + '&type_of_transaction=' + transremark + '';
+                console.log(resturl3);
+                request.get(resturl3, (err, response, body) => {
+                  if (!err && response.statusCode == 200) {
+
+                    let json = JSON.parse(response.body);
+                    console.log(json.length);
+                    if (json[1].status == 'SUCCESS') {
+                      msg = 'Hooray! Your transaction for amount ' + json[1].transaction_amount + ' INR to ' + json[1].payee_name + ' is successfull ! ';
+                      return res.json({
+                        speech: msg,
+                        displayText: msg,
+                        source: 'fundtransfer'
+                      });
+
+                    } else {
+                      errormsg = 'Oops! Your transaction for amount ' + json[1].transaction_amount + ' INR to ' + json[1].payee_name + ' failed ! ';
+                      return res.json({
+                        speech: errormsg,
+                        displayText: errormsg,
+                        source: 'fundtransfer'
+                      });
+                    }
+
+                  }
+                });
+
+
+
+              }
+
+            } else {
+              let errorMessage = 'I failed to retrieve payees details though authorized';
+              console.log('Reached3');
+              return res.json({
+                speech: errorMessage,
+                displayText: errorMessage,
+                source: 'fundtransfer'
+              });
+            }
+          }
+          return res.json({
+            speech: msg,
+            displayText: msg,
+            source: 'fundtransfer'
+          });
+        } else {
+          console.log(response3);
+          console.log('Reached4');
+          let errorMessage = 'I failed to retrieve Payee details';
+
+          return res.json({
+            speech: errorMessage,
+            displayText: errorMessage,
+            source: 'fundtransfer'
+          });
+        }
+      });
+    }
+
 
   }
 
