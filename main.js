@@ -1,4 +1,5 @@
-//Constants and Variables
+﻿//Constants and Variables
+"use strict"
 var WEATHER_API_KEY = "0fd7abb03e49159615b1dba2e6a2623f";
 var geoDirection_API_KEY = "AIzaSyCq8nITzbFiHjoh2U0_jh0Pa-OtLAUZyAQ";
 var geolocation_API_KEY = "AIzaSyC4EA0q_MYWqb514AVmYLOezWoT8n5Of08";
@@ -35,28 +36,28 @@ const transactions = [
         "Balance (INR )": 3512.92
     },
     {
-        "Transaction Date": "15/03/2017",
+        "Transaction Date": "18/03/2017",
         "Transaction Remarks": "BIL/001069066859/net pack/AIRT25916928205",
         "Withdrawal Amount (INR )": 164,
         "Deposit Amount (INR )": 0,
         "Balance (INR )": 3348.92
     },
     {
-        "Transaction Date": "15/02/2017",
+        "Transaction Date": "18/02/2017",
         "Transaction Remarks": "BIL/001069199986/net pack/AIRT25916929623",
         "Withdrawal Amount (INR )": 142,
         "Deposit Amount (INR )": 0,
         "Balance (INR )": 3206.92
     },
     {
-        "Transaction Date": "29/10/2016",
+        "Transaction Date": "18/01/2017",
         "Transaction Remarks": "BIL/001069244424/PGMIB-Talk time/AIRT25916929854",
         "Withdrawal Amount (INR )": 200,
         "Deposit Amount (INR )": 0,
         "Balance (INR )": 3006.92
     },
     {
-        "Transaction Date": "28/11/2016",
+        "Transaction Date": "18/02/2017",
         "Transaction Remarks": "BIL/001088461485/mom recharge/IDEACELLULAR_HI",
         "Withdrawal Amount (INR )": 120,
         "Deposit Amount (INR )": 0,
@@ -70,7 +71,7 @@ const transactions = [
         "Balance (INR )": 0
     },
     {
-        "Transaction Date": "22/12/2016",
+        "Transaction Date": "22/01/2017",
         "Transaction Remarks": "Ac xfr from gl 08050 to 08022",
         "Withdrawal Amount (INR )": 0,
         "Deposit Amount (INR )": 2886.92,
@@ -325,7 +326,7 @@ app.post('/account', (req, res) => {
 
     // Extras - weather
 
-    if (req.body.result.action === 'weatherda') {
+    if (req.body.result.action === 'weather') {
         console.log('*** weather ***');
         let city = req.body.result.parameters['geo-city'];
         let restUrl = 'http://api.openweathermap.org/data/2.5/weather?APPID=' + WEATHER_API_KEY + '&q=' + city;
@@ -682,7 +683,6 @@ app.post('/account', (req, res) => {
                             console.log(json2[j].transactiondate);
                             var transacdateraw = json2[j].transactiondate.toString();
                             var transacdate = transacdateraw.substr(0, 16);
-
                             var dA = json2[j].transaction_amount;
                             var sA = dA + '';
                             var tranamnt = parseFloat(Math.round(sA * 100) / 100).toFixed(2);
@@ -714,7 +714,7 @@ app.post('/account', (req, res) => {
                         }
                         console.log('Fetched account summary');
                         var actlastfour = accountno.substr(accountno.length - 4);
-                        msg = 'Your transaction history is, Transaction 1, ' + tranhistory[0].trantype + ' of ' + tranhistory[0].tranamnt + ' for ' + tranhistory[0].trandesc + ' on ' + tranhistory[0].trantype + '.';
+                        msg = 'Your transaction history is, Transaction 1, ' + tranhistory[0].trantype + ' of ' + tranhistory[0].tranamnt + ' for ' + tranhistory[0].trandesc + ' on ' + tranhistory[0].trandate + '.';
                     } else {
                         let errorMessage = 'I failed to retrieve account info.';
                         console.log('Reached3');
@@ -866,7 +866,7 @@ app.post('/account', (req, res) => {
         var lati;
         var logi;
         var msg;
-        var atmnotofetch
+        var atmnotofetch;
 
         let city = req.body.result.parameters['cityname'];
         let atmno = req.body.result.parameters['atmlocationdetails'];
@@ -937,13 +937,13 @@ app.post('/account', (req, res) => {
                     console.log(json2.length);
                     console.log('Reached1');
                     var atmlocations = [];
-                    var i = atmno++;
+                    var i = atmno-1;
                     console.log(i);
-                    if (json2[i].pincode !== undefined && json2[i].pincode !== '') {
-                        atmlocations.push(json2[i]);
+                    if (json2[atmno].pincode !== undefined && json2[atmno].pincode !== '') {
+                        atmlocations.push(json2[atmno]);
                         console.log('Reached2');
                         console.log(atmlocations[0]);
-                        msg = 'Address of ATM Location No ' + i + ' is ' + atmlocations[0].address + ', ' + atmlocations[0].city + 'and Phone number is ' + atmlocations[0].phoneno + ' ';
+                        msg = 'Address of ATM Location No ' + atmno + ' is ' + atmlocations[i].address + ', ' + atmlocations[i].city + 'and Phone number is ' + atmlocations[i].phoneno + ' ';
 
                     } else {
                         let errorMessage = 'I failed to retrieve ATM details though authorized';
@@ -987,7 +987,7 @@ app.post('/account', (req, res) => {
                         .then(function (response) {
                             try {
                                 console.log("cp1");
-
+                                var msg='empty as of now';
                                 transactions.forEach(function (transaction) {
                                     transaction.TranMonth = transaction["Transaction Date"].substring(3, 10);
                                 }, this);
@@ -1053,10 +1053,15 @@ app.post('/account', (req, res) => {
                                     "repeatingCredits": repeatingCredits
                                 }
                                 console.log(resultedTransactions);
-                                return res.json(resultedTransactions);
+                                msg = 'You have repeatedly paid '+resultedTransactions.repeatingDebits[0].amount+' for '+resultedTransactions.repeatingDebits[0].remarks;
+                                return res.json({
+                                            speech: msg,
+                                            displayText: msg,
+                                            source: 'weather'
+                                });
                             } catch (e) {
                                 console.log("error da mudhevi");
-                                var msg='System not available now, please try after sometime.';
+                                 msg='System not available now, please try after sometime.';
                                 return res.json({
                                             speech: msg,
                                             displayText: msg,
@@ -1069,7 +1074,7 @@ app.post('/account', (req, res) => {
         });
     }
 
-    //Suggestion per specific day
+    //Suggestion per specific day - Alert
     if(req.body.result.action === 'specificdaysuggestion'){
         var spendAmount = 0;
         var url = 'https://retailbanking.mybluemix.net/banking/icicibank/participantmapping?client_id=' + clientId;
@@ -1082,7 +1087,7 @@ app.post('/account', (req, res) => {
                         .then(function (response) {
                             response = transactions; //overriding the response to moc data
                             try {
-                            
+                                var msg = "No transactions for today";
                                 var date = new Date();
                                 date.setMonth(date.getMonth() -1);
                                 // 31/08/2016
@@ -1122,15 +1127,19 @@ app.post('/account', (req, res) => {
 
                                         if(remarkLastMonth === remarkLastToPreviousMonth){
                                             repeatedTrans.push(remarkLastMonth);
+                                            msg = "Looks like you made a transaction in previous months with remark of '"+repeatedTrans[0].trim()+"'";
+                           
                                         }
                                     });
                                 });
-                                var msg = "You made a transaction in previous months with remark of '"+repeatedTrans[0].trim()+"',. Do you want to make this today?"
+                            
+                               
                                 return res.json({
                                                     speech: msg,
                                                     displayText: msg,
                                                     source: 'weather'
                                                 });
+                            
                             } catch (e) {
                                 console.log(e);
                                 var msg='System not available now, please try after sometime.';
@@ -1145,8 +1154,86 @@ app.post('/account', (req, res) => {
         });
     }
 
-    //Credit card suggestion
-    if(req.body.result.action === 'placestockorder') {
+
+    if(req.body.result.action === 'fetchalert'){
+        var spendAmount = 0;
+        console.log('entry');
+        var url = 'https://retailbanking.mybluemix.net/banking/icicibank/participantmapping?client_id=' + clientId;
+        httpGet(url).then(function (response) {
+            //console.log(response);
+            httpGet('https://corporateapiprojectwar.mybluemix.net/corporate_banking/mybank/authenticate_client?client_id=' + clientId + '&password=' + accessCode)
+                .then(function (response) {
+                    var token = response[0].token;
+                    httpGet('https://retailbanking.mybluemix.net/banking/icicibank/ndaystransaction?client_id=kumarmca1@gmail.com&token=' + token + '&accountno=4444777755552276&days=10')
+                        .then(function (response) {
+                            response = transactions; //overriding the response to moc data
+                            try {
+                                
+                                var  msg = 'No transactions for today';
+                                var date = new Date();
+                                date.setMonth(date.getMonth() -1);
+                                // 31/08/2016
+                                var todayLastMonth = ("00" + date.getDate()).slice(-2)+'/'+("00" + (date.getMonth()+1)).slice(-2)+'/'+date.getFullYear();
+                                date.setMonth(date.getMonth() -1);
+                                var todayLastToPreviousMonth = ("00" + date.getDate()).slice(-2)+'/'+("00" + (date.getMonth()+1)).slice(-2)+'/'+date.getFullYear();
+                                var todayLastMonthTrans = [];
+                                transactions.forEach(function(transaction){
+                                    if(transaction["Transaction Date"] == todayLastMonth.toString()) {
+                                        todayLastMonthTrans.push(transaction);
+                                    }
+                                });
+                                var todayLastToPreviousMonthTrans = [];
+                                transactions.forEach(function(transaction){
+                                    if(transaction["Transaction Date"] == todayLastToPreviousMonth.toString()) {
+                                        todayLastToPreviousMonthTrans.push(transaction);
+                                    }
+                                });
+                                var repeatedTrans = [];
+                                todayLastMonthTrans.forEach(function(lastMonthTransaction){
+                                    todayLastToPreviousMonthTrans.forEach(function(todayLastToPreviousMonthTransaction){
+                                        //console.log(lastMonthTransaction["Transaction Remarks"].match(/[a-z]*/ig) 
+                                        //  +'='+ todayLastToPreviousMonthTransaction["Transaction Remarks"].match(/[a-z]*/ig));
+
+                                        var remarkLastMonth = '';
+                                        lastMonthTransaction["Transaction Remarks"].match(/[a-z]*/ig).forEach(function (rem) {
+                                            if (rem !== '')
+                                                remarkLastMonth = remarkLastMonth + ' ' + rem;
+                                        });
+                                        var remarkLastToPreviousMonth = '';
+                                        todayLastToPreviousMonthTransaction["Transaction Remarks"].match(/[a-z]*/ig).forEach(function (rem) {
+                                            if (rem !== '')
+                                                remarkLastToPreviousMonth = remarkLastToPreviousMonth + ' ' + rem;
+                                        });
+
+                                        if(remarkLastMonth === remarkLastToPreviousMonth){
+                                            repeatedTrans.push(remarkLastMonth);
+                                            console.log("Success");
+                                            msg = "You have alerts available !! Would you like to listen ?"
+
+                                        }
+                                    });
+                                });
+                              return res.json({
+                                                    speech: msg,
+                                                    displayText: msg,
+                                                    source: 'fetchalert'
+                                                });
+                            } catch (e) {
+                                console.log(e);
+                                var msg='System not available now, please try after sometime.';
+                                return res.json({
+                                            speech: msg,
+                                            displayText: msg,
+                                            source: 'fetchalert'
+                                });
+                            }
+                        });
+                });
+        });
+    }
+
+    //credit card suggestions
+    if(req.body.result.action === 'suggestcards') {
         var spendAmount = 0;
         var url = 'https://retailbanking.mybluemix.net/banking/icicibank/participantmapping?client_id=' + clientId;
         httpGet(url).then(function (response) {
@@ -1158,7 +1245,7 @@ app.post('/account', (req, res) => {
                         .then(function (response) {
                             response = transactions; //overriding the response to moc data
                             try {
-                                var keyWordsForTravel = ["flight", "car", "hotel", "trip", "toor", "bus", "train"];
+                                var keyWordsForTravel = ["flight", "car", "hotel", "trip", "tour", "bus", "train"];
                                 console.log(keyWordsForTravel);
                                 response.forEach(function(transaction) {
                                     keyWordsForTravel.forEach(function (keyWord){
@@ -1168,7 +1255,7 @@ app.post('/account', (req, res) => {
                                     });
                                 }, this);
 
-                                var msg = "You have spend "+spendAmount+" in last 3 months, so you can prefer applying for ICICI Bank Travel Card. Do you want to hear more about that?"
+                                var msg = "You have spend "+spendAmount+" in last 3 months, so you can prefer applying for I C I C I Bank Travel Card. Please call our TOLL FREE number to hear more about this."
                                 return res.json({
                                                     speech: msg,
                                                     displayText: msg,
@@ -1197,9 +1284,30 @@ app.post('/account', (req, res) => {
         var errorMessage;
         var destaccntno;
         var destpayid;
-        var destpayeename = req.body.result.parameters['FTPayee'];
+        var destpayeename;
+        var destpayeenameraw = req.body.result.parameters['FTPayee'];
         var destamount = req.body.result.parameters['FTAmount'];
         var transremark = req.body.result.parameters['FTComment'];
+
+        switch(destpayeenameraw)
+        {
+            case 'Selva':
+            destpayeename='A2274';
+            break;
+
+            case 'Sugu':
+            destpayeename='A2275';
+            break;
+
+            case 'sam':
+            destpayeename='A2276';
+            break;
+
+            default:
+            destpayeename='A2274';
+            break;
+
+        }
 
         getaccesscodeFT();
 
@@ -1310,12 +1418,13 @@ app.post('/account', (req, res) => {
 
                     let json4 = JSON.parse(response4.body);
                     console.log(json4);
+                    console.log(destpayeenameraw);
 
-                    msg = 'Hooray! Your transaction for amount ' + json4[1].transaction_amount + ' INR to ' + json4[1].payee_name + ' is successfull ! ';
+                    msg = 'Hooray! Your transaction for amount ' + json4[1].transaction_amount + ' INR to ' + destpayeenameraw + ' is successfull ! ';
                     console.log(msg);
 
                 } else {
-                    msg = 'Oops! Your transaction for amount ' + json[1].transaction_amount + ' INR to ' + json[1].payee_name + ' failed ! ';
+                    msg = 'Oops! Your transaction for amount ' + json[1].transaction_amount + ' INR to ' + destpayeenameraw + ' failed ! ';
 
                 }
 
@@ -1353,6 +1462,7 @@ app.post('/account', (req, res) => {
                     console.log(json1.length);
                     accesscode = json1[0].token;
                     console.log(accesscode);
+
                     getaccountcustno();
                 } else {
                     let errorMessage = 'I failed to get Access Code';
@@ -1397,7 +1507,7 @@ app.post('/account', (req, res) => {
                     let json2 = JSON.parse(response2.body);
                     console.log(json2);
                     if (json2[0].code == 200) {
-                        msg = json2[1].response;
+                        msg = 'Your card has been blocked successfully';
                     } else {
                         errorMessage = json2[0].description;
                         console.log('Reached3');
@@ -1471,13 +1581,13 @@ app.post('/account', (req, res) => {
                         accounts.push(json[0]);
                     }
                     custnocard = accounts[0].cust_id;
-                    blockmycard();
+                    unblockmycard();
 
                 }
             });
         }
 
-        function blockmycard() {
+        function unblockmycard() {
             "use strict";
             console.log('access code entry');
             console.log(accesscode, 'enter');
@@ -1490,7 +1600,15 @@ app.post('/account', (req, res) => {
                     let json2 = JSON.parse(response2.body);
                     console.log(json2);
                     if (json2[0].code == 200) {
-                        msg = json2[1].response;
+
+                       var msg = 'your card has been unblocked successfully';
+                        
+                       return res.json({
+                        speech: msg,
+                        displayText: msg,
+                        source: 'unblockmycard'
+                    });
+
                     } else {
                         errorMessage = json2[0].description;
                         console.log('Reached3');
@@ -1501,11 +1619,7 @@ app.post('/account', (req, res) => {
                         });
                     }
 
-                    return res.json({
-                        speech: msg,
-                        displayText: msg,
-                        source: 'unblockmycard'
-                    });
+                    
 
 
                 } else {
@@ -1623,7 +1737,8 @@ app.post('/account', (req, res) => {
 
     //bill pay
     if(req.body.result.action === 'billpay') {
-        var amount = req.body.result.amount;
+        var amount = req.body.result.parameters['amount'];
+
         var url = 'https://retailbanking.mybluemix.net/banking/icicibank/participantmapping?client_id=' + clientId;
         httpGet(url).then(function (response) {
             //console.log(response);
@@ -1634,6 +1749,8 @@ app.post('/account', (req, res) => {
                         var url = 'https://biller.mybluemix.net/biller/icicibank/billpay?client_id='+clientId+'&token='+token+'&custid=33337273&nickname=A2274&amount='+amount;
                         httpGet(url).then(function(response){
                             var msg='';
+
+                            console.log(url);
                             if(response[0].code === 200){
                                 msg=response[1].Success;
                             }
